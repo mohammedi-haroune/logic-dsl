@@ -87,6 +87,7 @@ sealed trait Formula {
     */
   def unary_not: Formula = !this
 
+  def :=(v: Boolean) = Evaluated(this, v)
   /**
     * Convert this well formed formula to conjuctive normale form [[https://en.wikipedia.org/wiki/Conjunctive_normal_form]]
     */
@@ -95,7 +96,7 @@ sealed trait Formula {
     case Negation(Literal(_)) => this
     case Negation(Or(l, r))   => And(Negation(l), Negation(r)).toCNF
     case Negation(And(l, r))  => Or(Negation(l), Negation(r)).toCNF
-    case Negation(_) => this
+    case Negation(_)          => this
     case Implies(l, r)        => Or(Negation(l), r).toCNF
     case Equivalent(l, r)     => And(Implies(l, r), Implies(r, l)).toCNF
     case Or(l, And(l1, r1))   => And(Or(l, l1).toCNF, Or(l, r1).toCNF)
@@ -138,6 +139,7 @@ object Formula {
         case l: Literal => set.contains(l)
         case And(l, r)  => isInfered(l, set) && isInfered(r, set)
         case Or(l, r)   => isInfered(l, set) || isInfered(r, set)
+        case _ => throw new Exception(s"not yet supported isInfered for $f")
       }
 
   def modusPonun(implication: Formula, left: Formula): FormulaSet =

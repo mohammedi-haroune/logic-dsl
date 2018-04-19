@@ -1,16 +1,21 @@
 package com.usthb.logic
 
-import com.usthb.logic.Formula.th
 import com.usthb.logic.Literals._
 
 import scala.collection.Set
+import scala.language.implicitConversions
 
-object Main extends App{
-  val f = P -> (Q & R) -> T
-  println(s"the cnf form of $f is ${f.toCNF}")
+
+object Main extends App {
+  val value =
+    withValues(
+      P := true,
+      Q := true,
+    ) eval P -> Q
+
+  println(s"eval = ${value}")
 
   val e = Set(P, Q, P -> R, (P & Q) -> V)
-  println(s"the theory of ${e.mkString(",")} is ${th(e).mkString(",")}")
 
   val world = Set(A)
   val defaults = Array(
@@ -19,5 +24,8 @@ object Main extends App{
   )
 
   val delta = Theory(world, defaults)
+
   println(s"extentions = ${delta.extentions}")
+
+
 }

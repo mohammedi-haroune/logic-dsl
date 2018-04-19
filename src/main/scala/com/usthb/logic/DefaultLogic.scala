@@ -6,7 +6,7 @@ import com.usthb.logic.Formula._
 /**
   * Implementaion for default in defaults logic, refer to default logic lecture for more information
   */
-case class Default(prerequis: Formula, consequence: Formula, justificatifs: FormulaSet) {
+case class Default(prerequis: Formula, justificatifs: FormulaSet, consequence: Formula) {
   def isApplicable(world: FormulaSet): Boolean = world.contains(prerequis)
   def isUsable(world: FormulaSet): Boolean = justificatifs.map(Negation.apply).find(world.contains) match {
     case Some(_) => false
@@ -14,7 +14,7 @@ case class Default(prerequis: Formula, consequence: Formula, justificatifs: Form
   }
 }
 object Default {
-  def apply(prerequis: Formula, consequence: Formula, justificatif: Formula): Default = new Default(prerequis, consequence, Set(justificatif))
+  def apply(prerequis: Formula, justificatif: Formula, consequence: Formula): Default = new Default(prerequis, Set(justificatif), consequence)
 }
 
 /**
