@@ -179,7 +179,7 @@ object Formula {
       set.map(_.toCNF).map(_.toDMACS).reduce(_ union _)
     def write(path: String): Unit = Formula.write(set, path)
 
-    def |=(f: Formula): Boolean = isInferedV2(f, set)
+    def |=(f: Formula): Boolean = isInfered(f, set)
   }
 
   def write(set: FormulaSet, path: String): Unit = {
@@ -207,17 +207,7 @@ object Formula {
     * @param set the set of formulas to check with
     * @return true if the given formula can be infered from the given set. false otherwise
     */
-  def isInfered(f: Formula, set: FormulaSet): Boolean =
-    if (set.contains(f)) true
-    else
-      f match {
-        case l: Literal => set.contains(l)
-        case And(l, r)  => isInfered(l, set) && isInfered(r, set)
-        case Or(l, r)   => isInfered(l, set) || isInfered(r, set)
-        case _          => throw new Exception(s"not yet supported isInfered for $f")
-      }
-
-  def isInferedV2(f: Formula, set: FormulaSet): Boolean = {
+  def isInfered(f: Formula, set: FormulaSet): Boolean = {
     val path = "test.cnf"
     (set + (!f)).write(path)
     val result = s"ubcsat -alg saps -i ${path} -solve".!!
@@ -248,29 +238,6 @@ object Formula {
   def extractFromAnd(f: Formula): FormulaSet = f match {
     case And(l, r) => Set(l, r)
     case _         => Set()
-  }
-
-  /**
-    * construct the th of a given set of formulas.
-    * the th of a set of formulas is the set of all formulas that can be infered from this set using the axioms
-    * and the rules of zero order logic
-    * @param e a set of formulas
-    * @return the theory of the give set
-    * @note it's a proof that I'm an idiot,
-    *       just don't look at it if you have some logic basics. otherwise you'll be able to unstar the project
-    */
-  def th(e: FormulaSet): FormulaSet = {
-    val th = mutable.Set[Formula]()
-    th ++= e
-    val (literals, o1) = e.partition(_.isInstanceOf[Literal])
-    val (formulas, negations) = o1.partition(_.isInstanceOf[BinaryFormula])
-    val (ands, o3) =
-      formulas.partition(_.asInstanceOf[BinaryFormula].op == LogicAnd)
-    val (ors, implies) =
-      o3.partition(_.asInstanceOf[BinaryFormula].op == LogicOr)
-    th ++= ands.flatMap(extractFromAnd)
-    while (th.size != (th ++= implies.flatMap(modusPonun(_, th))).size) {}
-    th
   }
 }
 

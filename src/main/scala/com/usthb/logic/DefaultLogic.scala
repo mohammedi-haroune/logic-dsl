@@ -30,11 +30,10 @@ case class Theory(world: FormulaSet, defaults: Array[Default]) {
   def extention(order: Seq[Default]): FormulaSet = {
     require(order.lengthCompare(defaults.length) <= 0, "order of defautls should contain for most number of defaults")
     val delta = mutable.Set.empty[Formula]
-    delta ++= th(world)
+    delta ++= world
     for (d <- order) {
       if (d.isApplicable(delta) && d.isUsable(delta)) {
         delta += d.consequence
-        delta ++= th(delta)
       }
     }
     delta
