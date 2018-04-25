@@ -19,15 +19,24 @@ Or
 
 # Basic Exmaple
 ```scala
-package com.usthb.logic
-
-import com.usthb.logic.Literals._
-
 import scala.collection.Set
+import scala.language.implicitConversions
+import com.usthb.logic.Literals._
+import com.usthb.logic.Formula._
+import com.usthb.logic.Default._
+import com.usthb.logic._
 
 object Main extends App{
   val f = P -> (Q & R) -> T
   println(s"the cnf form of $f is ${f.toCNF}")
+  
+  val value =
+    withValues(
+      P := true,
+      Q := true,
+    ) eval (P ⊃ Q)
+  
+  println(s"v = ${value}")
 
   val e = Set(P, Q, P -> R, (P & Q) -> V)
       
@@ -37,14 +46,14 @@ object Main extends App{
   
   e.write("test.cnf")
   
-  val f2 = (P & True) -> (P & True)
+  val f2 = (P & True) -> (P & True) & Q | False
   
   println(s"shorthand of f2 = ${f2.shorthand}")
 
   val world = Set(A)
   val defaults = Array(
-    Default(A, C, B),
-    Default(A, !B, !C)
+    (A * B) / C,
+    (A * !C) / !B
   )
 
   val delta = Theory(world, defaults)
