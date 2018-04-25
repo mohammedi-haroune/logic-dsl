@@ -6,16 +6,17 @@ import scala.collection.Set
 import scala.language.implicitConversions
 
 
-object Main extends App {
+object BasicExample extends App {
   val value =
     withValues(
       P := true,
       Q := true,
-    ) eval P -> Q
+    ) eval (P ⊃ Q)
 
   println(s"eval = ${value}")
 
-  val e = Set(P, Q, P -> R, (P & Q) -> V)
+  val e = Set(P, Q, P ⊃ R, (P ∧ Q) ⊃ V)
+
 
   val world = Set(A)
   val defaults = Array(
