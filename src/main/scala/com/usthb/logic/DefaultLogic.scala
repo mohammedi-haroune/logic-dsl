@@ -17,6 +17,13 @@ case class Default(prerequis: Formula, justificatifs: FormulaSet, consequence: F
 }
 object Default {
   def apply(prerequis: Formula, justificatif: Formula, consequence: Formula): Default = new Default(prerequis, Set(justificatif), consequence)
+  implicit class FormulaOps(f: Formula) {
+    def * (formules: Formula*): Justificatifs = new Justificatifs(f, formules.toSet)
+  }
+
+  class Justificatifs(f: Formula, j: FormulaSet) {
+    def / (c: Formula) = Default(f, j, c)
+  }
 }
 
 /**
@@ -27,12 +34,13 @@ case class Theory(world: FormulaSet, defaults: Array[Default]) {
   /**
     * Implemention for extention in defaults logic, refer to default logic lecture for more information
     */
-  def extention(order: Seq[Default]): FormulaSet = {
+  private def extention(order: Seq[Default]): FormulaSet = {
     require(order.lengthCompare(defaults.length) <= 0, "order of defautls should contain for most number of defaults")
     val delta = mutable.Set.empty[Formula]
     delta ++= world
     for (d <- order) {
       if (d.isApplicable(delta) && d.isUsable(delta)) {
+        println(s"d = ${d}")
         delta += d.consequence
       }
     }
