@@ -26,7 +26,6 @@ object BasicExample extends App {
   e.write("test.cnf")
 
 
-
   val world = Set(A)
   val defaults = Array(
     (A * B) / C,
