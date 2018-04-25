@@ -11,12 +11,14 @@ class FormulaEvaluator(evaluations: Evaluated*) {
     case Some(v) => v.v
     case None =>
       f match {
+        case True              => true
+        case False             => false
         case Negation(formula) => !eval(formula)
-        case Implies(l, r) => !(eval(l) && !eval(r))
-        case Equivalent(l, r) => eval(Implies(l, r)) && eval(Implies(r, l))
-        case Or(l, r) => eval(l) || eval(r)
-        case And(l, r) => eval(l) && eval(r)
-        case _ => throw new Exception(s"can't find evaluation for $f")
+        case Implies(l, r)     => !(eval(l) && !eval(r))
+        case Equivalent(l, r)  => eval(Implies(l, r)) && eval(Implies(r, l))
+        case Or(l, r)          => eval(l) || eval(r)
+        case And(l, r)         => eval(l) && eval(r)
+        case _                 => throw new Exception(s"can't find evaluation for $f")
       }
   }
 }
