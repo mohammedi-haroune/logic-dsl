@@ -103,11 +103,11 @@ sealed trait Formula {
     */
   def toCNF: Formula = {
     this match {
-      case Literal(_) | Negation(Literal(_)) => this
-      case Negation(Or(l, r))                => And(Negation(l).toCNF, Negation(r).toCNF).toCNF
-      case Negation(And(l, r))               => Or(Negation(l).toCNF, Negation(r).toCNF).toCNF
-      case Negation(f)                       => Negation(f.toCNF).toCNF
-      case Implies(l, r)                     => Or(Negation(l).toCNF, r.toCNF).toCNF
+      case Literal(_) | Negation(Literal(_)) | True | False | Empty => this
+      case Negation(Or(l, r))                                       => And(Negation(l).toCNF, Negation(r).toCNF).toCNF
+      case Negation(And(l, r))                                      => Or(Negation(l).toCNF, Negation(r).toCNF).toCNF
+      case Negation(f)                                              => Negation(f.toCNF).toCNF
+      case Implies(l, r)                                            => Or(Negation(l).toCNF, r.toCNF).toCNF
       case Equivalent(l, r) =>
         And(Implies(l, r).toCNF, Implies(r, l).toCNF).toCNF
       case Or(l, And(l1, r1)) => And(Or(l, l1).toCNF, Or(l, r1).toCNF).toCNF
@@ -137,6 +137,7 @@ sealed trait Formula {
 
   override def toString: String = {
     this match {
+      case Empty       => ""
       case True        => "true"
       case False       => "false"
       case Literal(x)  => x.name
@@ -156,14 +157,14 @@ sealed trait Formula {
     case Or(True, f)                                      => True
     case Or(f, False)                                     => f.shorthand
     case Or(False, f)                                     => f.shorthand
-    case Implies(l, r) if l == r                          => True
-    case Equivalent(l, r) if l == r                       => True
-    case And(l, r) if l == r                              => l.shorthand
-    case Or(l, r) if l == r                               => l.shorthand
-    case And(l, r) if r |= l                              => r.shorthand
-    case And(l, r) if l |= r                              => l.shorthand
-    case And(l, r)                                        => And(l.shorthand, r.shorthand)
-    case Or(l, r)                                         => Or(l.shorthand, r.shorthand)
+    case Implies(l, r) if l.shorthand == r.shorthand      => True
+    case Equivalent(l, r) if l.shorthand == r.shorthand   => True
+    case And(l, r) if l.shorthand == r.shorthand          => l.shorthand
+    case Or(l, r) if l.shorthand == r.shorthand           => l.shorthand
+    case And(l, r) if r.shorthand |= l.shorthand          => r.shorthand
+    case And(l, r) if l.shorthand |= r.shorthand          => l.shorthand
+    case And(l, r)                                        => And(l.shorthand, r.shorthand).shorthand
+    case Or(l, r)                                         => Or(l.shorthand, r.shorthand).shorthand
   }
 }
 
@@ -209,10 +210,14 @@ object Formula {
     */
   def isInfered(f: Formula, set: FormulaSet): Boolean = {
     val path = "test.cnf"
-    (set + (!f)).write(path)
-    val result = s"ubcsat -alg saps -i ${path} -solve".!!
-    new File(path).delete()
-    result.contains("No Solution found ")
+    val s = (set + (!f)) filter (_ != True)
+    if (s.contains(False)) false
+    else {
+      s.write(path)
+      val result = s"ubcsat -alg saps -i ${path} -solve".!!
+      new File(path).delete()
+      result.contains("No Solution found ")
+    }
   }
 
   def modusPonun(implication: Formula, left: Formula): FormulaSet =
@@ -241,6 +246,7 @@ object Formula {
   }
 }
 
+object Empty extends Formula
 object True extends Formula
 object False extends Formula
 
@@ -276,6 +282,8 @@ object Negation {
   def apply(f: Formula): Formula = {
     f match {
       case Negation(notF) => notF
+      case True           => False
+      case False          => True
       case _              => new Negation(f)
     }
   }
