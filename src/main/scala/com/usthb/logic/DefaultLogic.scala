@@ -3,12 +3,14 @@ package com.usthb.logic
 import scala.collection.{Set, mutable}
 import com.usthb.logic.Formula._
 
+import scala.language.postfixOps
+
 /**
   * Implementaion for default in defaults logic, refer to default logic lecture for more information
   */
 case class Default(prerequis: Formula, justificatifs: FormulaSet, consequence: Formula) {
-  def isApplicable(world: FormulaSet): Boolean = world.contains(prerequis)
-  def isUsable(world: FormulaSet): Boolean = justificatifs.map(Negation.apply).find(world.contains) match {
+  def isApplicable(world: FormulaSet): Boolean = world |= prerequis
+  def isUsable(world: FormulaSet): Boolean = justificatifs.map(Negation.apply).find(world |= _) match {
     case Some(_) => false
     case None => true
   }
