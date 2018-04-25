@@ -1,4 +1,5 @@
 package com.usthb.logic
+import com.usthb.logic.Formula.FormulaSet
 import org.scalatest._
 import com.usthb.logic.Literals._
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -15,7 +16,8 @@ class FormulaSpec
       (!P, !P),
       (P | Q, P | Q),
       (P -> Q, !P | Q),
-      (P -> (Q & R), (!P | Q) & (!P | R))
+      (P -> (Q & R), (!P | Q) & (!P | R)),
+      (!(P & (P -> P)), (!P | P) & (!P | !P))
     )
 
     forAll(examples) { (f, cnf) =>
@@ -50,6 +52,37 @@ class FormulaSpec
 
     forAll(examples) { (f, e, v) =>
       withValues(e: _*) eval f shouldEqual v
+    }
+  }
+
+
+  property("a well formed formula should be simplified propoerly") {
+    val examples = Table(
+      ("formula", "simplification"),
+      (P, P),
+      (!P, !P),
+      (P | Q, P | Q),
+      (P & (P -> P), P),
+      (P & P & P & P, P),
+      (P & True, P)
+    )
+
+    forAll(examples) { (f, s) =>
+      f.shorthand shouldEqual s
+    }
+  }
+
+  property("isInfereV2 should infere properly") {
+    val examples = Table[Formula, FormulaSet, Boolean](
+      ("formula", "set", "is inferred from"),
+      (P, Set(P), true),
+      (!P, Set(!P), true),
+      (P | Q, Set(P | Q), true),
+      (P & (P -> P), Set(P), true)
+    )
+
+    forAll(examples) { (f, s, bool) =>
+      (s |= f) shouldEqual bool
     }
   }
 }

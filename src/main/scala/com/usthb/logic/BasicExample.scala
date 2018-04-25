@@ -22,7 +22,7 @@ object BasicExample extends App {
 
   println(s"DMACS = ${e.toDMACS}")
 
-  e.writeDMACS("test.cnf")
+  e.write("test.cnf")
 
   val world = Set(A)
   val defaults = Array(
@@ -33,6 +33,8 @@ object BasicExample extends App {
   val delta = Theory(world, defaults)
 
   println(s"extentions = ${delta.extentions}")
+
+  println((P & (P -> P)).shorthand)
 
 
 }

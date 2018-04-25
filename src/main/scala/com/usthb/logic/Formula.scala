@@ -1,10 +1,15 @@
 package com.usthb.logic
 
+import java.io.File
 import java.nio.file.{Files, Paths}
 
 import com.usthb.logic.Formula.FormulaSet
+
 import scala.collection.JavaConverters._
 import scala.collection.{Set, mutable}
+import sys.process._
+import Formula._
+
 import scala.language.implicitConversions
 
 /**
@@ -96,24 +101,27 @@ sealed trait Formula {
   /**
     * Convert this well formed formula to conjuctive normale form [[https://en.wikipedia.org/wiki/Conjunctive_normal_form]]
     */
-  def toCNF: Formula = this match {
-    case Literal(_) | Negation(Literal(_)) => this
-    case Negation(Or(l, r))                => And(Negation(l), Negation(r)).toCNF
-    case Negation(And(l, r))               => Or(Negation(l), Negation(r)).toCNF
-    case Negation(_)                       => this
-    case Implies(l, r)                     => Or(Negation(l), r).toCNF
-    case Equivalent(l, r)                  => And(Implies(l, r), Implies(r, l)).toCNF
-    case Or(l, And(l1, r1))                => And(Or(l, l1).toCNF, Or(l, r1).toCNF)
-    case Or(l, r)                          => Or(l.toCNF, r.toCNF)
-    case And(l, r)                         => And(l.toCNF, r.toCNF)
-    case _                                 => throw new Exception(s"not yet supproted to convert to CNF $this")
+  def toCNF: Formula = {
+    this match {
+      case Literal(_) | Negation(Literal(_)) => this
+      case Negation(Or(l, r))                => And(Negation(l).toCNF, Negation(r).toCNF).toCNF
+      case Negation(And(l, r))               => Or(Negation(l).toCNF, Negation(r).toCNF).toCNF
+      case Negation(f)                       => Negation(f.toCNF).toCNF
+      case Implies(l, r)                     => Or(Negation(l).toCNF, r.toCNF).toCNF
+      case Equivalent(l, r) =>
+        And(Implies(l, r).toCNF, Implies(r, l).toCNF).toCNF
+      case Or(l, And(l1, r1)) => And(Or(l, l1).toCNF, Or(l, r1).toCNF).toCNF
+      case Or(And(l1, r1), l) => And(Or(l1, l).toCNF, Or(r1, l).toCNF).toCNF
+      case Or(l, r)           => Or(l.toCNF, r.toCNF)
+      case And(l, r)          => And(l.toCNF, r.toCNF)
+      case _ =>
+        throw new Exception(s"not yet supproted to convert to CNF $this")
+    }
   }
 
-  def toClause: FormulaSet = {
-    this.toCNF match {
-      case And(l, r) => l.toClause union r.toClause
-      case cnf => Set(cnf)
-    }
+  def toClause: FormulaSet = this.toCNF match {
+    case And(l, r) => l.toClause union r.toClause
+    case cnf       => Set(cnf)
   }
 
   def toDMACS: Set[Set[Int]] = {
@@ -121,19 +129,41 @@ sealed trait Formula {
   }
 
   def encode: Set[Int] = this match {
-    case l: Literal => Set(l.num)
+    case l: Literal           => Set(l.num)
     case Negation(l: Literal) => Set(-l.num)
-    case Or(l, r) => l.encode union r.encode
-    case _ => throw new Exception(s"cannot encode $this")
+    case Or(l, r)             => l.encode union r.encode
+    case _                    => throw new Exception(s"cannot encode not a clause $this")
   }
 
   override def toString: String = {
     this match {
+      case True        => "true"
+      case False       => "false"
       case Literal(x)  => x.name
       case Negation(x) => "(" + "¬ " + x.toString + ")"
       case f: BinaryFormula =>
         "(" + f.l.toString + " " + f.op.name + " " + f.r.toString + ")"
     }
+  }
+
+  def shorthand: Formula = this match {
+    case _: Literal | Negation(Literal(_)) | True | False => this
+    case And(f, True)                                     => f.shorthand
+    case And(True, f)                                     => f.shorthand
+    case And(f, False)                                    => False
+    case And(False, f)                                    => False
+    case Or(f, True)                                      => True
+    case Or(True, f)                                      => True
+    case Or(f, False)                                     => f.shorthand
+    case Or(False, f)                                     => f.shorthand
+    case Implies(l, r) if l == r                          => True
+    case Equivalent(l, r) if l == r                       => True
+    case And(l, r) if l == r                              => l.shorthand
+    case Or(l, r) if l == r                               => l.shorthand
+    case And(l, r) if r |= l                              => r.shorthand
+    case And(l, r) if l |= r                              => l.shorthand
+    case And(l, r)                                        => And(l.shorthand, r.shorthand)
+    case Or(l, r)                                         => Or(l.shorthand, r.shorthand)
   }
 }
 
@@ -141,17 +171,26 @@ object Formula {
 
   type FormulaSet = Set[Formula]
 
+  implicit def formula2Set(f: Formula): FormulaSetOps = FormulaSetOps(Set(f))
+
   implicit class FormulaSetOps(set: FormulaSet) {
     def toClause: Set[Formula] = set.flatMap(_.toClause)
-    def toDMACS: Set[Set[Int]] = set.map(_.toDMACS).reduce(_ union _)
-    def writeDMACS(path: String) = Formula.writeDMACS(set, path)
+    def toDMACS: Set[Set[Int]] =
+      set.map(_.toCNF).map(_.toDMACS).reduce(_ union _)
+    def write(path: String): Unit = Formula.write(set, path)
+
+    def |=(f: Formula): Boolean = isInferedV2(f, set)
   }
 
-  def writeDMACS(set: FormulaSet, path: String): Unit = {
+  def write(set: FormulaSet, path: String): Unit = {
     val writer = Files.newBufferedWriter(Paths.get(path))
     val dmacs = set.toDMACS
-    writer.write(s"p cnf ${dmacs.flatten.map(_.abs).toSet.size} ${dmacs.size}\n")
-    dmacs.map(_.mkString(",") + "\n").foreach(writer.write)
+    val vars = dmacs.flatten.map(_.abs).toSet
+    var mapping = vars.zipWithIndex.map(v => (v._1, v._2 + 1)).toMap
+    mapping ++= mapping.map(c => (-c._1, -c._2))
+
+    writer.write(s"p cnf ${vars.size} ${dmacs.size}\n")
+    dmacs.map(_.map(mapping).mkString(" ") + " 0\n").foreach(writer.write)
     writer.close()
   }
 
@@ -177,6 +216,14 @@ object Formula {
         case Or(l, r)   => isInfered(l, set) || isInfered(r, set)
         case _          => throw new Exception(s"not yet supported isInfered for $f")
       }
+
+  def isInferedV2(f: Formula, set: FormulaSet): Boolean = {
+    val path = "test.cnf"
+    (set + (!f)).write(path)
+    val result = s"ubcsat -alg saps -i ${path} -solve".!!
+    new File(path).delete()
+    result.contains("No Solution found ")
+  }
 
   def modusPonun(implication: Formula, left: Formula): FormulaSet =
     modusPonun(implication, Set(left))
@@ -209,6 +256,8 @@ object Formula {
     * and the rules of zero order logic
     * @param e a set of formulas
     * @return the theory of the give set
+    * @note it's a proof that I'm an idiot,
+    *       just don't look at it if you have some logic basics. otherwise you'll be able to unstar the project
     */
   def th(e: FormulaSet): FormulaSet = {
     val th = mutable.Set[Formula]()
@@ -225,14 +274,19 @@ object Formula {
   }
 }
 
+object True extends Formula
+object False extends Formula
+
 /**
   * a Binary Formula is a well formed formulas defined as folows :
   * If f1 and f2 are well-formed formulas, then so are f1 ∨ f2, f1 ∧ f2, f1 ⊃ f2, and f1 <=> f2.
   */
-sealed trait BinaryFormula extends Formula {
-  def l: Formula
-  def r: Formula
-  def op: LogicFunction
+class BinaryFormula(val l: Formula, val r: Formula, val op: LogicFunction)
+    extends Formula {
+  def unapply(arg: BinaryFormula): Option[(Formula, Formula, LogicFunction)] =
+    Option((l, r, op))
+  def apply(l: Formula, r: Formula, op: LogicFunction) =
+    new BinaryFormula(l, r, op)
 }
 
 /**
@@ -266,9 +320,7 @@ object Negation {
   * @param r the right part of the operation
   */
 case class And(override val l: Formula, override val r: Formula)
-    extends BinaryFormula {
-  override val op: LogicFunction = LogicAnd
-}
+    extends BinaryFormula(l, r, LogicAnd)
 
 /**
   * A Formulas composed for l or r
@@ -276,9 +328,7 @@ case class And(override val l: Formula, override val r: Formula)
   * @param r the right part of the operation
   */
 case class Or(override val l: Formula, override val r: Formula)
-    extends BinaryFormula {
-  override def op: LogicFunction = LogicOr
-}
+    extends BinaryFormula(l, r, LogicOr)
 
 /**
   * A Formulas composed for l implies r
@@ -286,9 +336,7 @@ case class Or(override val l: Formula, override val r: Formula)
   * @param r the right part of the operation
   */
 case class Implies(override val l: Formula, override val r: Formula)
-    extends BinaryFormula {
-  override def op: LogicFunction = LogicImplies
-}
+    extends BinaryFormula(l, r, LogicImplies)
 
 /**
   * A Formulas composed for l equivalent r
@@ -296,9 +344,7 @@ case class Implies(override val l: Formula, override val r: Formula)
   * @param r the right part of the operation
   */
 case class Equivalent(override val l: Formula, override val r: Formula)
-    extends BinaryFormula {
-  override def op: LogicFunction = LogicEquivalent
-}
+    extends BinaryFormula(l, r, LogicEquivalent)
 
 /**
   * binary functions to construct new formulas that have a name (for converting to string properly)
