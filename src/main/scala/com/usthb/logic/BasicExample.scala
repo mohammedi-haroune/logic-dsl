@@ -4,6 +4,7 @@ import com.usthb.logic.Literals._
 
 import scala.collection.Set
 import scala.language.implicitConversions
+import com.usthb.logic.Formula._
 
 
 object BasicExample extends App {
@@ -17,6 +18,11 @@ object BasicExample extends App {
 
   val e = Set(P, Q, P ⊃ R, (P ∧ Q) ⊃ V)
 
+  println(s"clause = ${e.toClause}")
+
+  println(s"DMACS = ${e.toDMACS}")
+
+  e.writeDMACS("test.cnf")
 
   val world = Set(A)
   val defaults = Array(

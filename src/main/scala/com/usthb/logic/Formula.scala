@@ -1,5 +1,9 @@
 package com.usthb.logic
 
+import java.nio.file.{Files, Paths}
+
+import com.usthb.logic.Formula.FormulaSet
+import scala.collection.JavaConverters._
 import scala.collection.{Set, mutable}
 import scala.language.implicitConversions
 
@@ -88,21 +92,39 @@ sealed trait Formula {
   def unary_not: Formula = !this
 
   def :=(v: Boolean) = Evaluated(this, v)
+
   /**
     * Convert this well formed formula to conjuctive normale form [[https://en.wikipedia.org/wiki/Conjunctive_normal_form]]
     */
   def toCNF: Formula = this match {
-    case _: Literal           => this
-    case Negation(Literal(_)) => this
-    case Negation(Or(l, r))   => And(Negation(l), Negation(r)).toCNF
-    case Negation(And(l, r))  => Or(Negation(l), Negation(r)).toCNF
-    case Negation(_)          => this
-    case Implies(l, r)        => Or(Negation(l), r).toCNF
-    case Equivalent(l, r)     => And(Implies(l, r), Implies(r, l)).toCNF
-    case Or(l, And(l1, r1))   => And(Or(l, l1).toCNF, Or(l, r1).toCNF)
-    case Or(l, r)             => Or(l.toCNF, r.toCNF)
-    case And(l, r)            => And(l.toCNF, r.toCNF)
-    case _                    => throw new Exception(s"not yet supproted to convert to CNF $this")
+    case Literal(_) | Negation(Literal(_)) => this
+    case Negation(Or(l, r))                => And(Negation(l), Negation(r)).toCNF
+    case Negation(And(l, r))               => Or(Negation(l), Negation(r)).toCNF
+    case Negation(_)                       => this
+    case Implies(l, r)                     => Or(Negation(l), r).toCNF
+    case Equivalent(l, r)                  => And(Implies(l, r), Implies(r, l)).toCNF
+    case Or(l, And(l1, r1))                => And(Or(l, l1).toCNF, Or(l, r1).toCNF)
+    case Or(l, r)                          => Or(l.toCNF, r.toCNF)
+    case And(l, r)                         => And(l.toCNF, r.toCNF)
+    case _                                 => throw new Exception(s"not yet supproted to convert to CNF $this")
+  }
+
+  def toClause: FormulaSet = {
+    this.toCNF match {
+      case And(l, r) => l.toClause union r.toClause
+      case cnf => Set(cnf)
+    }
+  }
+
+  def toDMACS: Set[Set[Int]] = {
+    toClause.map(f => f.encode)
+  }
+
+  def encode: Set[Int] = this match {
+    case l: Literal => Set(l.num)
+    case Negation(l: Literal) => Set(-l.num)
+    case Or(l, r) => l.encode union r.encode
+    case _ => throw new Exception(s"cannot encode $this")
   }
 
   override def toString: String = {
@@ -118,6 +140,20 @@ sealed trait Formula {
 object Formula {
 
   type FormulaSet = Set[Formula]
+
+  implicit class FormulaSetOps(set: FormulaSet) {
+    def toClause: Set[Formula] = set.flatMap(_.toClause)
+    def toDMACS: Set[Set[Int]] = set.map(_.toDMACS).reduce(_ union _)
+    def writeDMACS(path: String) = Formula.writeDMACS(set, path)
+  }
+
+  def writeDMACS(set: FormulaSet, path: String): Unit = {
+    val writer = Files.newBufferedWriter(Paths.get(path))
+    val dmacs = set.toDMACS
+    writer.write(s"p cnf ${dmacs.flatten.map(_.abs).toSet.size} ${dmacs.size}\n")
+    dmacs.map(_.mkString(",") + "\n").foreach(writer.write)
+    writer.close()
+  }
 
   /**
     * an implicit conversion from [[Symbol]] to [[Formula]]
@@ -139,7 +175,7 @@ object Formula {
         case l: Literal => set.contains(l)
         case And(l, r)  => isInfered(l, set) && isInfered(r, set)
         case Or(l, r)   => isInfered(l, set) || isInfered(r, set)
-        case _ => throw new Exception(s"not yet supported isInfered for $f")
+        case _          => throw new Exception(s"not yet supported isInfered for $f")
       }
 
   def modusPonun(implication: Formula, left: Formula): FormulaSet =
@@ -205,7 +241,9 @@ sealed trait BinaryFormula extends Formula {
   * @param symbol the symbol that contians the name of the formulas
   * @note it is recommended to use predefined literals in the [[com.usthb.logic.Literals]] object
   */
-case class Literal(symbol: Symbol) extends Formula
+case class Literal(symbol: Symbol) extends Formula {
+  def num: Int = symbol.name.map(_.toInt - 'A'.toInt + 1).sum
+}
 
 /**
   * a Negation is a well formed fromulas defined as follows :
