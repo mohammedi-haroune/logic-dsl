@@ -25,6 +25,21 @@ object BasicExample extends App {
 
   e.write("test.cnf")
 
+  val f2 = (P & True) -> (P & True) & Q | False
+
+  println(s"shorthand of f2 = ${f2.shorthand}")
+
+  val world1: Set[Formula] = Set(C -> D, (A & B) -> E, E | D, D -> F)
+  val defaults1 = Array(
+    ((E | F) * (A & F)) / (A & F),
+    A * B / B,
+    ((A & E) * C) / C,
+    Empty * !E / !E
+  )
+
+  val delta1 = Theory(world1, defaults1)
+
+  println(s"extentions = \n${delta1.extentions.map{case (k, v) => (k -- world1, v)}.mkString("\n")}")
 
   val world = Set(A)
   val defaults = Array(
@@ -35,6 +50,4 @@ object BasicExample extends App {
   val delta = Theory(world, defaults)
 
   println(s"extentions = ${delta.extentions}")
-
-  println((P & (P -> P)).shorthand)
 }
