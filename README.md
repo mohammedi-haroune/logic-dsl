@@ -21,7 +21,6 @@ Or
 ```scala
 package com.usthb.logic
 
-import com.usthb.logic.Formula.th
 import com.usthb.logic.Literals._
 
 import scala.collection.Set
@@ -31,7 +30,16 @@ object Main extends App{
   println(s"the cnf form of $f is ${f.toCNF}")
 
   val e = Set(P, Q, P -> R, (P & Q) -> V)
-  println(s"the theory of ${e.mkString(",")} is ${th(e).mkString(",")}")
+      
+  println(s"clause = ${e.toClause}")
+  
+  println(s"DMACS = ${e.toDMACS}")
+  
+  e.write("test.cnf")
+  
+  val f2 = (P & True) -> (P & True)
+  
+  println(s"shorthand of f2 = ${f2.shorthand}")
 
   val world = Set(A)
   val defaults = Array(
