@@ -1,8 +1,8 @@
 package com.usthb.logic
 
-import scala.collection.{Set, mutable}
 import com.usthb.logic.Formula._
 
+import scala.collection.{Set, mutable}
 import scala.language.postfixOps
 
 /** A Default in logic default has three parts : prerequis, justificatifs and consequence
@@ -24,12 +24,17 @@ case class Default(prerequis: Formula,
                    consequence: Formula) {
   val num: Int = Default.num
   Default.num = Default.num + 1
-  def isApplicable(world: FormulaSet): Boolean = if (prerequis == Empty) true else world |= prerequis
+  def isApplicable(world: FormulaSet): Boolean =
+    if (prerequis == Empty) true else world |= prerequis
   def isUsable(world: FormulaSet): Boolean =
     justificatifs.map(Negation.apply).find(world |= _) match {
       case Some(_) => false
       case None    => true
     }
+
+  def notUsable(world: FormulaSet): Boolean = !isUsable(world)
+
+  def notApplicable(world: FormulaSet): Boolean = !isApplicable(world)
 
   override def toString: String = s"d${num}"
 }
@@ -47,12 +52,13 @@ object Default {
   class Justificatifs(f: Formula, j: FormulaSet) {
     def /(c: Formula) = Default(f, j, c)
   }
+  override def toString: String = s"d$num"
 }
 
 /**
   * Implemention for theory in defaults logic, refer to default logic lecture for more information
   */
-case class Theory(world: FormulaSet, defaults: Array[Default]) {
+case class Theory(world: FormulaSet, defaults: Set[Default]) {
 
   /**
     * Implemention for extention in defaults logic, refer to default logic lecture for more information
@@ -60,7 +66,7 @@ case class Theory(world: FormulaSet, defaults: Array[Default]) {
     * @return the extension found by using the given defaults in order and a list of generators defaults
     */
   private def extention(order: Seq[Default]): (FormulaSet, List[Default]) = {
-    require(order.lengthCompare(defaults.length) <= 0,
+    require(order.lengthCompare(defaults.size) <= 0,
             "order of defautls should contain for most number of defaults")
     val delta = mutable.Set.empty[Formula]
     var generators = List.empty[Default]
@@ -78,6 +84,64 @@ case class Theory(world: FormulaSet, defaults: Array[Default]) {
     * get all possible extentions for this Theory
     * @return all extensions associated with their generators
     */
-  def extentions: Map[FormulaSet, Predef.Set[String]] =
-    defaults.permutations.map(x => extention(x)).toList.groupBy(_._1).mapValues(_.map(_._2.mkString("<")).toSet)
+  def extentions: Set[Extention] = {
+    val e = rec(Extention(world, this, Set()), defaults).filter(_.isDefined).map(_.get)
+    println("-----------------------------------------")
+    e
+  }
+
+  /*  def extentions: Map[FormulaSet, Predef.Set[String]] =
+    defaults.toArray.permutations
+      .map(x => extention(x))
+      .toList
+      .groupBy(_._1)
+      .mapValues(_.map(_._2.mkString("<")).toSet)*/
+
+  private def rec(e: Extention, reste: Set[Default]): Set[Option[Extention]] = {
+    println("-----------------------------------------")
+    println(e)
+    println(s"reste = ${reste}")
+
+    reste.find(d => d.isApplicable(e.e)) match {
+      case Some(d) => {
+        println(s"$d is applicable, is it usable ?")
+        rec(e.apply(d), reste - d) union rec(e, reste - d)
+      }
+      case None =>
+        println(
+          s"no default is applicable from D = ${reste.mkString("[", ",", "]")}")
+        if (e.notValide) {
+          println("not valid")
+          Set(None)
+        } else {
+          println("valid")
+          Set(Some(e))
+        }
+    }
+  }
+}
+case class Extention(e: FormulaSet, theory: Theory, generators: Set[Default]) {
+
+  def isValide: Boolean =
+    if (generators.exists(_.notUsable(e))) {
+      println("found generator noUsable: " + generators.find(_.notUsable(e)))
+      false
+    } else if (theory.defaults
+                 .diff(generators)
+                 .exists(_.isUsable(e))) {
+      println(
+        "found not generator but usable: " + theory.defaults
+          .diff(generators)
+          .find(_.isUsable(e)))
+      false
+    } else true
+
+  def notValide = !isValide
+
+  def apply(d: Default) =
+    copy(e = e + d.consequence, generators = generators + d)
+
+  override def toString: String =
+    s"E = Th(W U {${e.diff(theory.world).mkString(",")}}), G = ${generators
+      .mkString("[", ",", "]")}"
 }

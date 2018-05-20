@@ -9,7 +9,7 @@ import com.usthb.logic.Default._
 
 
 object BasicExample extends App {
-  val value =
+/*  val value =
     withValues(
       P := true,
       Q := true,
@@ -30,24 +30,33 @@ object BasicExample extends App {
   println(s"shorthand of f2 = ${f2.shorthand}")
 
   val world1: Set[Formula] = Set(C -> D, (A & B) -> E, E | D, D -> F)
-  val defaults1 = Array(
+  val defaults1 = Set(
     ((E | F) * (A & F)) / (A & F),
     A * B / B,
     ((A & E) * C) / C,
     Empty * !E / !E
+  )*/
+
+
+  val world2: Set[Formula] = Set(A -> (B & C), !T | A, D -> T, D, F -> E)
+
+  val defaults2 = Set(
+    ((B & D) * F) / F,
+    E * P / P,
+    F * !P / !P
   )
 
-  val delta1 = Theory(world1, defaults1)
+  val delta2 = Theory(world2, defaults2)
 
-  println(s"extentions = \n${delta1.extentions.map{case (k, v) => (k -- world1, v)}.mkString("\n")}")
+  /*val world1: Set[Formula] = Set()
 
-  val world = Set(A)
-  val defaults = Array(
-    (A * B) / C,
-    (A * !C) / !B
+  val defaults1 = Set(
+    Empty * B / !B,
+    Empty * !B / B
   )
 
-  val delta = Theory(world, defaults)
+  val delta = Theory(world1, defaults1)
+  */
 
-  println(s"extentions = ${delta.extentions}")
+  println(s"extentions = ${delta2.extentions.mkString("[\n", "\n", "\n]")}")
 }
