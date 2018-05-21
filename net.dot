@@ -1,0 +1,19 @@
+
+digraph {
+rankdir=BT
+Tenis[label=<Tenis<br /> <font font-size='12' color='red'>m2</font>>];
+Haroune[label=<Haroune<br /> <font font-size='12' color='red'>m1</font>>];
+Personne[label=<Personne<br /> <font font-size='12' color='red'>m1</font>> shape=rectangle];
+Sport[label=<Sport<br /> <font font-size='12' color='red'>m2</font>> shape=rectangle];
+Khra[];
+Basket[label=<Basket<br /> <font font-size='12' color='red'>m2</font>>];
+tahar[label=<tahar<br /> <font font-size='12' color='red'>m1</font>>]
+tahar -> Personne [label=instance];
+tahar -> Basket [label=play];
+Haroune -> Khra [label=play];
+Haroune -> Tenis [label=play];
+Basket -> Sport [label=instance];
+Haroune -> Personne [label=instance];
+Tenis -> Sport [label=instance]
+}
+    
