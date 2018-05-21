@@ -9,6 +9,7 @@ import Node.symbole2Node
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.sys.process._
+import scala.util.Random
 
 trait Node {
   val name: Symbol
@@ -33,12 +34,27 @@ trait Node {
 
   override def toString: String = name.name
 
-  def getAllMarkers(implicit net: SemanticNet): mutable.Set[Marker] = net.markers.filter(_.isMarked(this))
+  def getAllMarkers(implicit net: SemanticNet): mutable.Set[Marker] =
+    net.markers.filter(_.isMarked(this))
 
-  def label(implicit net: SemanticNet) = s"label=<${name.name}<br /> <font font-size='12' color='red'>${getAllMarkers.map(_.name.name).mkString(",")}</font>>"
+  private def allMarkersString(implicit net: SemanticNet) =
+    getAllMarkers
+      .map(m =>
+        s"<font color='${m.color}'> ${m.name.name}(${m.history(this)})</font>")
+      .mkString(",")
+
+  /*private val v1 = <font color='red'>${getAllMarkers
+    .map(m => s"${m.name.name}(${m.history(this)})")
+    .mkString(",")}</font>"*/
+
+  def label(implicit net: SemanticNet) =
+    s"label=<${name.name}<br /> $allMarkersString>"
 
   def graph(implicit net: SemanticNet): String =
-    s"${name.name}" + "[" + (if(getAllMarkers.nonEmpty) label else "") + (if (isClass) " shape=rectangle" else "") + "]"
+    s"${name.name}" + "[" + (if (getAllMarkers.nonEmpty) label else "") + (if (isClass)
+                                                                             " shape=rectangle"
+                                                                           else
+                                                                             "") + "]"
 }
 
 object Node {
@@ -81,8 +97,8 @@ case class Question(node1: Symbol, relation: Symbol, node2: Symbol)(
     val m1 = Marker('m1)
     val m2 = Marker('m2)
 
-    m1.mark(node1)
-    m2.mark(node2)
+    m1.init(node1)
+    m2.init(node2)
 
     m1.expandAll()
     m2.expandAll()
@@ -119,16 +135,20 @@ trait SemanticNetApp {
 
 case class Marker(name: Symbol)(implicit net: SemanticNet) {
   net.addMarker(this)
+  val color = Marker.getColor
   val open = Set.empty[Node]
-  val closed = Set.empty[Node]
+  val history = mutable.Map[Node, Int]()
+  var step = 0
+  def closed: Set[Node] = mutable.Set.empty[Node] union history.keySet
   def isMarked(node: Node): Boolean = (open union closed).contains(node)
 
-  def mark(node: Node): Unit = open += node
+  def init(node: Node): Unit = open += node
   def expand(): Unit =
     open
       .foreach { marked =>
         if (!closed.contains(marked)) {
-          closed += marked
+          history += marked -> step
+          step = step + 1
           open -= marked
           marked.relations.foreach {
             case Is(specific, general) if general == marked =>
@@ -141,4 +161,12 @@ case class Marker(name: Symbol)(implicit net: SemanticNet) {
       }
 
   def expandAll(): Unit = while (open.nonEmpty) expand()
+}
+
+object Marker {
+  private var colors = mutable.ArrayBuffer("green", "blue", "red")
+  def getColor = {
+    val i = new Random().nextInt(colors.size)
+    colors.remove(i)
+  }
 }

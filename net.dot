@@ -1,13 +1,19 @@
 
 digraph {
 rankdir=BT
-Tenis[label=<Tenis<br /> <font font-size='12' color='red'>m2</font>>];
-Haroune[label=<Haroune<br /> <font font-size='12' color='red'>m1</font>>];
-Personne[label=<Personne<br /> <font font-size='12' color='red'>m1</font>> shape=rectangle];
-Sport[label=<Sport<br /> <font font-size='12' color='red'>m2</font>> shape=rectangle];
+graph [fontsize=24 pad="0.5", nodesep="1", ranksep="2"]
+splines=true; esep=1;
+edge [fontsize=24]
+node [fontsize=24]
+ranksep = 2.5
+nodesep = .50
+Tenis[label=<Tenis<br /> <font color='blue'> m2(1)</font>>];
+tahar[label=<tahar<br /> <font color='red'> m1(1)</font>>];
 Khra[];
-Basket[label=<Basket<br /> <font font-size='12' color='red'>m2</font>>];
-tahar[label=<tahar<br /> <font font-size='12' color='red'>m1</font>>]
+Haroune[label=<Haroune<br /> <font color='red'> m1(2)</font>>];
+Basket[label=<Basket<br /> <font color='blue'> m2(2)</font>>];
+Sport[label=<Sport<br /> <font color='blue'> m2(0)</font>> shape=rectangle];
+Personne[label=<Personne<br /> <font color='red'> m1(0)</font>> shape=rectangle]
 tahar -> Personne [label=instance];
 tahar -> Basket [label=play];
 Haroune -> Khra [label=play];

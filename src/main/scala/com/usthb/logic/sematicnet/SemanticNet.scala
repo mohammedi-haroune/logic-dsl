@@ -14,7 +14,7 @@ class SemanticNet {
     relations += relation
   }
 
-  def addMarker(marker: Marker): markers.type = markers += marker
+  def addMarker(marker: Marker): Unit = markers += marker
 
   def getOrCreate(symbol: Symbol): Node = {
     nodes.find(_.name == symbol) match {
@@ -35,6 +35,12 @@ class SemanticNet {
     s"""
       |digraph {
       |rankdir=BT
+      |graph [fontsize=24 pad="0.5", nodesep="1", ranksep="2"]
+      |splines=true; esep=1;
+      |edge [fontsize=24]
+      |node [fontsize=24]
+      |ranksep = 2.5
+      |nodesep = .50
       |${nodes.map(_.graph).mkString(";\n")}
       |${relations.map(_.graph).mkString(";\n")}
       |}
