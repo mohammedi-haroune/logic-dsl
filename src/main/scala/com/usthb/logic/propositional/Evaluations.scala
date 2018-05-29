@@ -1,4 +1,4 @@
-package com.usthb.logic
+package com.usthb.logic.propositional
 
 case class Evaluated(f: Formula, v: Boolean)
 

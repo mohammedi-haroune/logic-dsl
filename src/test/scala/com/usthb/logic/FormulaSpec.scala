@@ -1,7 +1,8 @@
 package com.usthb.logic
-import com.usthb.logic.Formula.FormulaSet
+import com.usthb.logic.propositional.Formula.FormulaSet
 import org.scalatest._
-import com.usthb.logic.Literals._
+import com.usthb.logic.propositional.Literals._
+import com.usthb.logic.propositional.{Formula, True, withValues}
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 class FormulaSpec

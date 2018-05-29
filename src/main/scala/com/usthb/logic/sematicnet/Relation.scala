@@ -5,6 +5,7 @@ trait Relation {
   def arity: Int
   def argumentsDef: Array[String]
   def arguments: Array[Node]
+  def isTransitive: Boolean = false
 
   /*require(arguments.length == arity,
           s"wrong number of arguments ${arguments.length}, expected $arity")
@@ -17,7 +18,7 @@ trait Relation {
       .map { case (arg, value) => s"$arg=$value" }
       .mkString(",")})"
 
-  def graph: String = "not supported yet"
+  def graph(implicit net: SemanticNet): String = "not supported yet"
 }
 
 object Relation {
@@ -49,11 +50,14 @@ object Relation {
   }
 }
 
-class BinaryRelation(override val name: Symbol, arg1: Node, arg2: Node) extends Relation {
+class BinaryRelation(override val name: Symbol, val arg1: Node, val arg2: Node) extends Relation {
   override def arity: Int = 2
   override def argumentsDef: Array[String] = Array("arg1", "arg2")
   override def arguments: Array[Node] = Array(arg1, arg2)
-  override def graph: String = s"$arg1 -> $arg2 [label=${name.name}]"
+  override def graph(implicit net: SemanticNet): String = s"$arg1 -> $arg2 [label=${name.name} ${
+    if (net.solutions.contains((arg1, arg2))) "color = red" else ""} ]"
+
+  override def toString: String = s"$arg1 ${name.name} $arg2"
 }
 
 object BinaryRelation {
@@ -64,11 +68,13 @@ object BinaryRelation {
   }
 }
 
-case class Is(arg1: Node, arg2: Node) extends BinaryRelation('is_a, arg1, arg2) {
+case class Is(override val arg1: Node, override val arg2: Node) extends BinaryRelation('is_a, arg1, arg2) {
+  override def isTransitive: Boolean = true
   arg1.isClass = true
   arg2.isClass = true
 }
 
-case class Instance(arg1: Node, arg2: Node) extends BinaryRelation('instance, arg1, arg2) {
+case class Instance(override val arg1: Node, override val arg2: Node) extends BinaryRelation('instance, arg1, arg2) {
+  override def isTransitive: Boolean = true
   arg2.isClass = true
 }

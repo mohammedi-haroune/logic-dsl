@@ -1,16 +1,14 @@
-package com.usthb.logic
+package com.usthb.logic.propositional
 
 import java.io.File
 import java.nio.file.{Files, Paths}
 
-import com.usthb.logic.Formula.FormulaSet
+import com.usthb.logic._
+import com.usthb.logic.propositional.Formula._
 
-import scala.collection.JavaConverters._
-import scala.collection.{Set, mutable}
-import sys.process._
-import Formula._
-
+import scala.collection.Set
 import scala.language.implicitConversions
+import scala.sys.process._
 
 /**
   * Abstract a well formed formula of propositional logic which are obtained by using the construction rules below:
@@ -323,28 +321,29 @@ case class Equivalent(override val l: Formula, override val r: Formula)
 
 /**
   * binary functions to construct new formulas that have a name (for converting to string properly)
-  * @param name a name of the operation (using when converting a [[com.usthb.logic.Formula]] to string)
+  *
+  * @param name a name of the operation (using when converting a [[propositional.Formula]] to string)
   * @param op a binray operation to construct new fromuals
   * @example f1 and f2,  f1 or f2 ...etc
   */
 case class LogicFunction(name: String, op: (Formula, Formula) => Formula)
 
 /**
-  * implementation of logical and operator for [[com.usthb.logic.LogicFunction]]
+  * implementation of logical and operator for [[LogicFunction]]
   */
 object LogicAnd extends LogicFunction("∧", _ and _)
 
 /**
-  * implementation of logical or operator for [[com.usthb.logic.LogicFunction]]
+  * implementation of logical or operator for [[LogicFunction]]
   */
 object LogicOr extends LogicFunction("∨", _ or _)
 
 /**
-  * implementation of logical implies operator for [[com.usthb.logic.LogicFunction]]
+  * implementation of logical implies operator for [[LogicFunction]]
   */
 object LogicImplies extends LogicFunction("⊃", _ implies _)
 
 /**
-  * implementation of logical equivalent operator for [[com.usthb.logic.LogicFunction]]
+  * implementation of logical equivalent operator for [[LogicFunction]]
   */
 object LogicEquivalent extends LogicFunction("≡", _ equivalent _)

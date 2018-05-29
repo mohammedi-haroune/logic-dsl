@@ -6,9 +6,10 @@ class SemanticNet {
   implicit val net: SemanticNet = this
 
   val nodes: Set[Node] = Set.empty[Node]
-
   val relations: Set[Relation] = Set.empty[Relation]
   val markers: Set[Marker] = Set.empty[Marker]
+  val solutions: Set[(Node, Node)] = Set.empty[(Node, Node)]
+
   def addRelation(relation: Relation): Unit = {
     relation.arguments.foreach(_.addRelation(relation))
     relations += relation
@@ -39,8 +40,6 @@ class SemanticNet {
       |splines=true; esep=1;
       |edge [fontsize=24]
       |node [fontsize=24]
-      |ranksep = 2.5
-      |nodesep = .50
       |${nodes.map(_.graph).mkString(";\n")}
       |${relations.map(_.graph).mkString(";\n")}
       |}

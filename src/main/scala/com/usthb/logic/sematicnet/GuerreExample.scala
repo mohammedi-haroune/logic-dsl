@@ -1,5 +1,6 @@
 package com.usthb.logic.sematicnet
-import Node._
+
+import com.usthb.logic.sematicnet.Node._
 
 object BasicExample extends SemanticNetApp with App {
   initialise
@@ -24,21 +25,16 @@ object BasicExample extends SemanticNetApp with App {
 
   'lio -> 'sexe -> 'Male
   'liza -> 'sexe -> 'Female
+
   'lio -> 'play -> 'Person
-
-  showNodes()
-
-  showRelations()
 
   println(properties('Haroune))
 
-  save
+  println(solve(Question('Human_Being, 'play, 'Sport)))
 
-  //println(solve(Question('Human_Being, 'play, 'Sport)))
+  println(solveOne(Question('Human_Being, 'play, 'Sport)))
 
-  //println(solveOne(Question('Human_Being, 'play, 'Sport)))
+  //println(net.graph)
 
-  saturer()
-
-  save("satured")
+  //save("net")
 }

@@ -1,7 +1,5 @@
 package com.usthb.logic.sematicnet
 
-import java.nio.file.{Files, Paths}
-
 import scala.collection.mutable.Set
 import scala.language.implicitConversions
 import Node.symbole2Node
@@ -102,71 +100,16 @@ case class Question(node1: Symbol, relation: Symbol, node2: Symbol)(
 
     m1.expandAll()
     m2.expandAll()
-
-    for {
-      e1 <- m1.closed
-      e2 <- m2.closed
-      if net.relations.exists(
-        r =>
-          r.name == relation && r.arguments.contains(e1) && r.arguments
-            .contains(e2))
-    } yield (e1, e2)
-  }
-}
-
-trait SemanticNetApp {
-  implicit var net: SemanticNet = SemanticNet.empty
-
-  def initialise: SemanticNet = SemanticNet.empty
-  def showNet(): Unit = println(net)
-  def showNodes(): Unit = println(net.nodes)
-  def showRelations(): Unit = println(net.relations)
-  def showMarkers(): Unit = println(net.markers)
-
-  def solve(question: Question): mutable.Set[(Node, Node)] = question.solve
-
-  def save(file: String): Process = {
-    Files.write(Paths.get(s"$file.dot"), Seq(net.graph).asJava)
-    Seq("dot", "-Tpng", s"$file.dot", s"-o$file.png").run
-  }
-
-  def save: Process = save("net")
-}
-
-case class Marker(name: Symbol)(implicit net: SemanticNet) {
-  net.addMarker(this)
-  val color = Marker.getColor
-  val open = Set.empty[Node]
-  val history = mutable.Map[Node, Int]()
-  var step = 0
-  def closed: Set[Node] = mutable.Set.empty[Node] union history.keySet
-  def isMarked(node: Node): Boolean = (open union closed).contains(node)
-
-  def init(node: Node): Unit = open += node
-  def expand(): Unit =
-    open
-      .foreach { marked =>
-        if (!closed.contains(marked)) {
-          history += marked -> step
-          step = step + 1
-          open -= marked
-          marked.relations.foreach {
-            case Is(specific, general) if general == marked =>
-              open += specific
-            case Instance(instance, concept) if concept == marked =>
-              open += instance
-            case _ =>
-          }
-        }
-      }
-
-  def expandAll(): Unit = while (open.nonEmpty) expand()
-}
-
-object Marker {
-  private var colors = mutable.ArrayBuffer("green", "blue", "red")
-  def getColor = {
-    val i = new Random().nextInt(colors.size)
-    colors.remove(i)
+    val solutions =
+      for {
+        e1 <- m1.closed
+        e2 <- m2.closed
+        if net.relations.exists(
+          r =>
+            r.name == relation && r.arguments.contains(e1) && r.arguments
+              .contains(e2))
+      } yield (e1, e2)
+    net.solutions ++= solutions
+    solutions
   }
 }

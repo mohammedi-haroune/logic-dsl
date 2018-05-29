@@ -20,11 +20,14 @@ Human_Being[ shape=rectangle];
 Basket[];
 Female[ shape=rectangle];
 liza[]
+lio -> Human_Being [label=instance  ];
 tahar -> Basket [label=play  ];
 Person -> Human_Being [label=is_a  ];
 Female -> Gender [label=is_a  ];
 Haroune -> Tenis [label=play  ];
 Male -> Gender [label=is_a  ];
+liza -> Animal [label=instance  ];
+liza -> Human_Being [label=instance  ];
 lio -> Male [label=sexe  ];
 liza -> Lion [label=instance  ];
 Basket -> Sport [label=instance  ];
@@ -35,7 +38,11 @@ Tenis -> Sport [label=instance  ];
 Haroune -> BabEzzouar [label=from  ];
 Animal -> Human_Being [label=is_a  ];
 Haroune -> Person [label=instance  ];
+tahar -> Human_Being [label=instance  ];
 liza -> Female [label=sexe  ];
+Lion -> Human_Being [label=is_a  ];
+Haroune -> Human_Being [label=instance  ];
+lio -> Animal [label=instance  ];
 lio -> Lion [label=instance  ]
 }
     
