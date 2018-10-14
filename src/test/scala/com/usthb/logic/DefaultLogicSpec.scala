@@ -1,8 +1,10 @@
 package com.usthb.logic
 
-import com.usthb.logic.Literals._
+import com.usthb.logic.propositional.Literals._
 import org.scalatest.{FunSpec, Matchers}
-import com.usthb.logic.Default._
+import com.usthb.logic.defaultlogic.Default._
+import com.usthb.logic.defaultlogic.Theory
+
 import scala.collection.Set
 
 class DefaultLogicSpec extends FunSpec with Matchers {

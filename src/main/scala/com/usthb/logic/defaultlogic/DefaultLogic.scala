@@ -1,6 +1,7 @@
-package com.usthb.logic
+package com.usthb.logic.defaultlogic
 
-import com.usthb.logic.Formula._
+import com.usthb.logic.propositional.Formula._
+import com.usthb.logic.propositional.{Empty, Formula, Negation}
 
 import scala.collection.{Set, mutable}
 import scala.language.postfixOps
@@ -102,7 +103,7 @@ case class Theory(world: FormulaSet, defaults: Set[Default]) {
     println(e)
     println(s"reste = ${reste}")
 
-    reste.find(d => d.isApplicable(e.e)) match {
+    reste.find(d => d.isApplicable(e.e) && d.isUsable(e.e)) match {
       case Some(d) => {
         println(s"$d is applicable, is it usable ?")
         rec(e.apply(d), reste - d) union rec(e, reste - d)
@@ -123,16 +124,16 @@ case class Theory(world: FormulaSet, defaults: Set[Default]) {
 case class Extention(e: FormulaSet, theory: Theory, generators: Set[Default]) {
 
   def isValide: Boolean =
-    if (generators.exists(_.notUsable(e))) {
-      println("found generator noUsable: " + generators.find(_.notUsable(e)))
+    if (generators.exists(x => x.notUsable(e) || x.notApplicable(e))) {
+      println("found generator noUsable: " + generators.find(x => x.notUsable(e) || x.notApplicable(e)))
       false
     } else if (theory.defaults
                  .diff(generators)
-                 .exists(_.isUsable(e))) {
+                 .exists(x => x.isUsable(e) && x.isApplicable(e))) {
       println(
         "found not generator but usable: " + theory.defaults
           .diff(generators)
-          .find(_.isUsable(e)))
+          .find(x => x.isUsable(e) && x.isApplicable(e)))
       false
     } else true
 

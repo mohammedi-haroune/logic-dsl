@@ -1,4 +1,4 @@
-package com.usthb.logic
+package com.usthb.logic.propositional
 
 object Literals {
   val A: Formula = 'A

@@ -79,6 +79,6 @@ project/plugins/project/
 .history
 .cache
 .lib/
-
+.idea/
 
 # End of https://www.gitignore.io/api/sbt,intellij
