@@ -2,7 +2,7 @@ package com.usthb.logic.sematicnet
 
 import com.usthb.logic.sematicnet.Node._
 
-object BasicExample extends SemanticNetApp with App {
+object GuerreExample extends SemanticNetApp with App {
   initialise
 
   'Person is 'Human_Being

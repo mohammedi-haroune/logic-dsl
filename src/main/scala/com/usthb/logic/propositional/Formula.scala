@@ -212,7 +212,7 @@ object Formula {
     if (s.contains(False)) false
     else {
       s.write(path)
-      val result = s"ubcsat -alg saps -i ${path} -solve".!!
+      val result = s"./ubcsat -alg saps -i ${path} -solve".!!
       new File(path).delete()
       result.contains("No Solution found ")
     }
